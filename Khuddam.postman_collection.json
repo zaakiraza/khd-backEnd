@@ -1,0 +1,160 @@
+{
+  "info": {
+    "_postman_id": "7c0bb8b6-7c6d-4f7a-9d7e-4a9d7c0b8b66",
+    "name": "Khuddam API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection generated from project routes/controllers. Use the collection variables to set base_url, tokens, and resource IDs."
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000" },
+    { "key": "user_token", "value": "" },
+    { "key": "admin_token", "value": "" },
+    { "key": "user_id", "value": "" },
+    { "key": "class_id", "value": "" },
+    { "key": "session_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+            "request": {
+              "method": "POST",
+              "header": [ {"key": "Content-Type", "value": "application/json" } ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"personal_info\": {\n    \"first_name\": \"Ali\",\n    \"last_name\": \"Hassan\",\n    \"father_name\": \"Hassan\",\n    \"dob\": \"2012-05-10\",\n    \"age\": 13,\n    \"img_URL\": \"https://example.com/photo.jpg\",\n    \"whatsapp_no\": \"+1111111111\",\n    \"alternative_no\": \"+2222222222\",\n    \"email\": \"student@example.com\",\n    \"address\": \"Street 1\",\n    \"city\": \"City\",\n    \"country\": \"Country\",\n    \"enrolled_year\": 2024,\n    \"marj_e_taqleed\": \"Marja Name\",\n    \"halafnama\": true\n  },\n  \"academic_progress\": {\n    \"academic_class\": \"8th\",\n    \"institute_name\": \"ABC School\",\n    \"inProgress\": true,\n    \"result\": \"A+\"\n  }\n}"
+              },
+              "url": { "raw": "{{base_url}}/api/auth/signup", "host": ["{{base_url}}"], "path": ["api","auth","signup"] }
+            }
+        },
+        {
+          "name": "Verify OTP (after signup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type","value": "application/json"},
+              {"key": "Authorization","value": "Bearer {{user_token}}"}
+            ],
+            "body": {"mode": "raw","raw": "{\n  \"otp\": \"1234\"\n}"},
+            "url": {"raw": "{{base_url}}/api/auth/verifyOtp","host":["{{base_url}}"],"path":["api","auth","verifyOtp"]}
+          }
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization","value": "Bearer {{user_token}}"}
+            ],
+            "url": {"raw": "{{base_url}}/api/auth/resendOtp","host":["{{base_url}}"],"path":["api","auth","resendOtp"]}
+          }
+        },
+        {
+          "name": "Set Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type","value": "application/json"},
+              {"key": "Authorization","value": "Bearer {{user_token}}"}
+            ],
+            "body": {"mode": "raw","raw": "{ \n  \"password\": \"Passw0rd!\"\n}"},
+            "url": {"raw": "{{base_url}}/api/auth/setPassword","host":["{{base_url}}"],"path":["api","auth","setPassword"]}
+          }
+        },
+        {
+          "name": "Forgot Password - Send OTP (before login)",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type","value": "application/json"}],
+            "body": {"mode":"raw","raw": "{ \n  \"email\": \"student@example.com\"\n}"},
+            "url": {"raw": "{{base_url}}/api/auth/forget_passwordOtp","host":["{{base_url}}"],"path":["api","auth","forget_passwordOtp"]}
+          }
+        },
+        {
+          "name": "Verify Forgot Password OTP",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type","value": "application/json"}],
+            "body": {"mode":"raw","raw": "{ \n  \"email\": \"student@example.com\",\n  \"otp\": \"1234\"\n}"},
+            "url": {"raw": "{{base_url}}/api/auth/verify_forget_PasswordOtp","host":["{{base_url}}"],"path":["api","auth","verify_forget_PasswordOtp"]}
+          }
+        },
+        {
+          "name": "Forgot Password - Generate New Password",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type","value": "application/json"}],
+            "body": {"mode":"raw","raw": "{ \n  \"email\": \"student@example.com\"\n}"},
+            "url": {"raw": "{{base_url}}/api/auth/forgot_password","host":["{{base_url}}"],"path":["api","auth","forgot_password"]}
+          }
+        },
+        {
+          "name": "Change Password (after login)",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type","value": "application/json"}, {"key": "Authorization","value":"Bearer {{user_token}}"}],
+            "body": {"mode":"raw","raw": "{ \n  \"oldPassword\": \"OldPass1!\",\n  \"newPassword\": \"NewPass2!\"\n}"},
+            "url": {"raw": "{{base_url}}/api/auth/change_password","host":["{{base_url}}"],"path":["api","auth","change_password"]}
+          }
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type","value": "application/json"}],
+            "body": {"mode":"raw","raw": "{ \n  \"email\": \"admin@example.com\",\n  \"password\": \"AdminPass!1\"\n}"},
+            "url": {"raw": "{{base_url}}/api/auth/admin_login","host":["{{base_url}}"],"path":["api","auth","admin_login"]}
+          }
+        },
+        {
+          "name": "User Login",
+          "request": {
+            "method": "POST",
+            "header": [ {"key": "Content-Type","value": "application/json"}],
+            "body": {"mode":"raw","raw": "{ \n  \"email\": \"student@example.com\",\n  \"password\": \"Passw0rd!\"\n}"},
+            "url": {"raw": "{{base_url}}/api/auth/login","host":["{{base_url}}"],"path":["api","auth","login"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Class (Admin)",
+      "item": [
+        {
+          "name": "Create Class",
+          "request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key":"Authorization","value":"Bearer {{admin_token}}"}],"body": {"mode": "raw","raw": "{\n  \"class_name\": \"Class A\",\n  \"teacher_assigned\": \"Teacher 1\",\n  \"class_timing\": \"09:00-10:00\",\n  \"class_day\": \"Monday\"\n}"},"url": {"raw": "{{base_url}}/api/class/","host":["{{base_url}}"],"path":["api","class"]}}
+        },
+        {"name": "Get All Classes","request": {"method": "GET","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/class/all","host":["{{base_url}}"],"path":["api","class","all"]}}},
+        {"name": "Get Single Class","request": {"method": "GET","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/class/single/{{class_id}}","host":["{{base_url}}"],"path":["api","class","single","{{class_id}}"]}}},
+        {"name": "Update Class","request": {"method": "PUT","header": [ {"key": "Content-Type","value": "application/json"},{"key":"Authorization","value":"Bearer {{admin_token}}"}],"body": {"mode": "raw","raw": "{\n  \"class_name\": \"Class A Updated\",\n  \"teacher_assigned\": \"Teacher 2\",\n  \"class_timing\": \"10:00-11:00\",\n  \"class_day\": \"Tuesday\"\n}"},"url": {"raw": "{{base_url}}/api/class/{{class_id}}","host":["{{base_url}}"],"path":["api","class","{{class_id}}"]}}},
+        {"name": "Delete Class","request": {"method": "DELETE","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/class/{{class_id}}","host":["{{base_url}}"],"path":["api","class","{{class_id}}"]}}},
+        {"name": "Deactivate Class","request": {"method": "PATCH","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/class/update/inactive/{{class_id}}","host":["{{base_url}}"],"path":["api","class","update","inactive","{{class_id}}"]}}},
+        {"name": "Activate Class","request": {"method": "PATCH","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/class/update/active/{{class_id}}","host":["{{base_url}}"],"path":["api","class","update","active","{{class_id}}"]}}}
+      ]
+    },
+    {
+      "name": "Session (Admin)",
+      "item": [
+        {"name": "Create Session","request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key":"Authorization","value":"Bearer {{admin_token}}"}],"body": {"mode":"raw","raw": "{\n  \"session_name\": \"2025-2026\"\n}"},"url": {"raw": "{{base_url}}/api/session/","host":["{{base_url}}"],"path":["api","session"]}}},
+        {"name": "Get All Sessions","request": {"method": "GET","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/session/all","host":["{{base_url}}"],"path":["api","session","all"]}}},
+        {"name": "Get Single Session","request": {"method": "GET","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/session/single/{{session_id}}","host":["{{base_url}}"],"path":["api","session","single","{{session_id}}"]}}},
+        {"name": "Update Session","request": {"method": "PUT","header": [ {"key": "Content-Type","value": "application/json"},{"key":"Authorization","value":"Bearer {{admin_token}}"}],"body": {"mode":"raw","raw": "{\n  \"session_name\": \"2026-2027\"\n}"},"url": {"raw": "{{base_url}}/api/session/{{session_id}}","host":["{{base_url}}"],"path":["api","session","{{session_id}}"]}}},
+        {"name": "Delete Session","request": {"method": "DELETE","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/session/{{session_id}}","host":["{{base_url}}"],"path":["api","session","{{session_id}}"]}}},
+        {"name": "Deactivate Session","request": {"method": "PATCH","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/session/update/inactive/{{session_id}}","host":["{{base_url}}"],"path":["api","session","update","inactive","{{session_id}}"]}}},
+        {"name": "Activate Session","request": {"method": "PATCH","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/session/update/active/{{session_id}}","host":["{{base_url}}"],"path":["api","session","update","active","{{session_id}}"]}}}
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {"name": "Get All Users (Admin)","request": {"method": "GET","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/users/all","host":["{{base_url}}"],"path":["api","users","all"]}}},
+        {"name": "Get Single User (Admin)","request": {"method": "GET","header": [{"key":"Authorization","value":"Bearer {{admin_token}}"}],"url": {"raw": "{{base_url}}/api/users/single/{{user_id}}","host":["{{base_url}}"],"path":["api","users","single","{{user_id}}"]}}},
+        {"name": "Update Personal (User)","request": {"method": "PUT","header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{user_token}}"}],"body": {"mode":"raw","raw": "{\n  \"first_name\": \"Ali\",\n  \"last_name\": \"Hassan\",\n  \"father_name\": \"Hassan\",\n  \"dob\": \"2012-05-10\",\n  \"age\": 13,\n  \"img_URL\": \"https://example.com/photo.jpg\",\n  \"whatsapp_no\": \"+1111111111\",\n  \"alternative_no\": \"+2222222222\",\n  \"address\": \"Street 1\",\n  \"city\": \"City\",\n  \"country\": \"Country\",\n  \"enrolled_year\": 2024,\n  \"marj_e_taqleed\": \"Marja Name\"\n}"},"url": {"raw": "{{base_url}}/api/users/update_personal","host":["{{base_url}}"],"path":["api","users","update_personal"]}}},
+        {"name": "Update Academic Progress (User - Not Implemented)","request": {"method": "PUT","header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{user_token}}"}],"body": {"mode":"raw","raw": "{\n  \"academic_class\": \"8th\",\n  \"institute_name\": \"ABC School\",\n  \"inProgress\": true,\n  \"result\": \"A+\"\n}"},"url": {"raw": "{{base_url}}/api/users/update_academic_progress","host":["{{base_url}}"],"path":["api","users","update_academic_progress"]}}},
+        {"name": "Update Class History (Admin - Not Implemented)","request": {"method": "PUT","header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{admin_token}}"}],"body": {"mode":"raw","raw": "{\n  \"history\": []\n}"},"url": {"raw": "{{base_url}}/api/users/update_class_history/{{user_id}}","host":["{{base_url}}"],"path":["api","users","update_class_history","{{user_id}}"]}}}
+      ]
+    }
+  ]
+}
