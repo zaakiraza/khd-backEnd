@@ -89,7 +89,7 @@ const signup = async (req, res) => {
 
     const { academic_class, institute_name, inProgress, result } =
       academic_progress;
-    if (!academic_class || !institute_name || !inProgress) {
+    if (!academic_class || !institute_name || inProgress == undefined) {
       return errorHandler(
         res,
         400,
@@ -108,10 +108,20 @@ const signup = async (req, res) => {
       return errorHandler(res, 404, "All Guardian Info fields are required");
     }
 
+    if (personal_info.CNIC == guardian_info.CNIC) {
+      return errorHandler(
+        res,
+        400,
+        "Guardian CNIC can't be same as student CNIC"
+      );
+    }
+
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const otpExpiresAt = new Date(Date.now() + 1 * 60 * 1000);
     personal_info.otp = otp;
     personal_info.otpExpiresAt = otpExpiresAt;
+    const passCNIC = CNIC.toString();
+    personal_info.password = await hash(passCNIC, 12);
 
     let userDetails = new User({
       personal_info,
@@ -135,9 +145,9 @@ const signup = async (req, res) => {
     );
 
     return successHandler(res, 201, "User registered. OTP sent to email.", {
-      // userId: userDetails._id,
+      userId: userDetails._id,
       email: email,
-      // token,
+      token,
     });
   } catch (error) {
     console.error(error.message);
@@ -220,26 +230,26 @@ const resendOtp = async (req, res) => {
   return successHandler(res, 200, "verification code send successfully");
 };
 
-const setPassword = async (req, res) => {
-  const { password } = req.body;
-  const userId = req.user;
-  if (!password) {
-    return errorHandler(res, 400, "Password is required");
-  }
-  const userDetail = await User.findById(userId.userId);
-  if (!userDetail) {
-    return errorHandler(res, 404, "User not found");
-  }
-  // if (userDetail.personal_info.verified) {
-  //     return errorHandler(res, 400, "First verify your account");
-  // }
-  if (userDetail.personal_info.password) {
-    return errorHandler(res, 400, "Password already set");
-  }
-  userDetail.personal_info.password = await hash(password, 12);
-  await userDetail.save();
-  return successHandler(res, 200, "Password set successfully");
-};
+// const setPassword = async (req, res) => {
+//   const { password } = req.body;
+//   const userId = req.user;
+//   if (!password) {
+//     return errorHandler(res, 400, "Password is required");
+//   }
+//   const userDetail = await User.findById(userId.userId);
+//   if (!userDetail) {
+//     return errorHandler(res, 404, "User not found");
+//   }
+//   // if (userDetail.personal_info.verified) {
+//   //     return errorHandler(res, 400, "First verify your account");
+//   // }
+//   if (userDetail.personal_info.password) {
+//     return errorHandler(res, 400, "Password already set");
+//   }
+//   userDetail.personal_info.password = await hash(password, 12);
+//   await userDetail.save();
+//   return successHandler(res, 200, "Password set successfully");
+// };
 
 // before login
 const forgotPasswordOtp = async (req, res) => {
@@ -427,7 +437,7 @@ export default {
   signup,
   verifyOtp,
   resendOtp,
-  setPassword,
+  // setPassword,
   forgotPasswordOtp,
   verifyChangePasswordOtp,
   forgotPassword,

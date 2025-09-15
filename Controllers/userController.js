@@ -3,7 +3,10 @@ import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
 
 const getUser = async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.user.userId;
+    if (!userId) {
+      return errorHandler(res, 400, "User ID is required");
+    }
     const userData = await User.findOne({ _id: userId }).select(
       "-__v -createdAt -updatedAt -personal_info.password -personal_info.otp -personal_info.otpExpiresAt -personal_info.isAdmin"
     );
@@ -46,12 +49,7 @@ const update_user = async (req, res) => {
     bank_info,
   } = req.body;
   try {
-    if (
-      !personal_info ||
-      !academic_progress ||
-      !guardian_info ||
-      !bank_info
-    ) {
+    if (!personal_info || !academic_progress || !guardian_info || !bank_info) {
       return errorHandler(
         res,
         400,

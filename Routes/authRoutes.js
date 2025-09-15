@@ -9,7 +9,7 @@ authRoutes.post("/signup", auth.signup);
 authRoutes.post("/verifyOtp", authenticateToken, auth.verifyOtp);
 authRoutes.post("/resendOtp", authenticateToken, auth.resendOtp);
 
-authRoutes.post("/setPassword", authenticateToken, auth.setPassword);
+// authRoutes.post("/setPassword", authenticateToken, auth.setPassword);
 
 authRoutes.post("/forget_passwordOtp", auth.forgotPasswordOtp);
 authRoutes.post("/verify_forget_PasswordOtp", auth.verifyChangePasswordOtp);
