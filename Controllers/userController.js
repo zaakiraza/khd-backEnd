@@ -21,19 +21,124 @@ const getUser = async (req, res) => {
 
 const getAllUser = async (req, res) => {
   try {
-    const users = await User.find().select(
-      "-__v -createdAt -updatedAt -personal_info.password -personal_info.otp -personal_info.otpExpiresAt -personal_info.isAdmin"
-    );
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const users = await User.find()
+      .select(
+        "-__v -createdAt -updatedAt -personal_info.password -personal_info.otp -personal_info.otpExpiresAt -personal_info.isAdmin"
+      )
+      .skip(skip)
+      .limit(limit);
+
+    const totalUsers = await User.countDocuments();
+    const totalPages = Math.ceil(totalUsers / limit);
+
     if (users.length === 0) {
       return errorHandler(res, 404, "No users found");
     }
+
+    const response = {
+      users,
+      pagination: {
+        totalUsers,
+        totalPages,
+        currentPage: page,
+        limit,
+      },
+    };
+
+    return successHandler(res, 200, "Users retrieved successfully", response);
+  } catch (error) {
+    return errorHandler(res, 500, "Error retrieving users", error.message);
+  }
+};
+
+const getUserCount = async (req, res) => {
+  try {
+    const count = await User.countDocuments();
     return successHandler(
       res,
       200,
-      "Users retrieved successfully",
-      users,
-      users.length
+      "User count retrieved successfully",
+      null,
+      count
     );
+  } catch (error) {
+    return errorHandler(res, 500, "Error retrieving user count", error.message);
+  }
+};
+
+const getActiveUser = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const users = await User.find({ "personal_info.status": "active" })
+      .select(
+        "-__v -createdAt -updatedAt -personal_info.password -personal_info.otp -personal_info.otpExpiresAt -personal_info.isAdmin"
+      )
+      .skip(skip)
+      .limit(limit);
+
+    const totalUsers = users.length;
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    if (users.length === 0) {
+      return errorHandler(res, 404, "No users found");
+    }
+
+    const response = {
+      users,
+      pagination: {
+        totalUsers,
+        totalPages,
+        currentPage: page,
+        limit,
+      },
+    };
+
+    return successHandler(res, 200, "Users retrieved successfully", response);
+  } catch (error) {
+    return errorHandler(res, 500, "Error retrieving users", error.message);
+  }
+};
+
+const getPendingUser = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const users = await User.find({
+      "personal_info.application_status": "pending",
+    })
+      .select(
+        "-__v -createdAt -updatedAt -personal_info.password -personal_info.otp -personal_info.otpExpiresAt -personal_info.isAdmin"
+      )
+      .skip(skip)
+      .limit(limit);
+
+    const totalUsers = users.length;
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    if (users.length === 0) {
+      return errorHandler(res, 404, "No users found");
+    }
+
+    const response = {
+      users,
+      pagination: {
+        totalUsers,
+        totalPages,
+        currentPage: page,
+        limit,
+      },
+    };
+
+    return successHandler(res, 200, "Users retrieved successfully", response);
   } catch (error) {
     return errorHandler(res, 500, "Error retrieving users", error.message);
   }
@@ -271,6 +376,9 @@ const update_class_history = async (req, res) => {
 export default {
   getUser,
   getAllUser,
+  getUserCount,
+  getActiveUser,
+  getPendingUser,
   update_user,
   update_class_history,
 };
