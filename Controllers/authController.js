@@ -83,9 +83,9 @@ const signup = async (req, res) => {
     if (userCNIC) {
       return errorHandler(res, 400, "User with this CNIC already exists");
     }
-    if (age > 19 || age < 9) {
-      return errorHandler(res, 400, "Age is not according to our school");
-    }
+    // if (age > 19 || age < 9) {
+    //   return errorHandler(res, 400, "Age is not according to our school");
+    // }
 
     const { academic_class, institute_name, inProgress, result } =
       academic_progress;

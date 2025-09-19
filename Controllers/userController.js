@@ -83,7 +83,9 @@ const getActiveUser = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const totalUsers = users.length;
+    const totalUsers = await User.countDocuments({
+      "personal_info.status": "active",
+    });
     const totalPages = Math.ceil(totalUsers / limit);
 
     if (users.length === 0) {

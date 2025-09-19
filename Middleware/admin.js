@@ -7,7 +7,7 @@ export const admin = async (req, res, next) => {
     try {
         const userDetail = await User.findById(userId.userId);
         if (!userDetail) {
-            return errorHandler(res, 400, "Invalid user");
+            return errorHandler(res, 403, "Wrong user");
         }
         if (!userDetail.personal_info.isAdmin) {
             return errorHandler(res, 403, "Access denied: Admins only");

@@ -2,6 +2,14 @@ import mongoose from "mongoose";
 import Class from "./class.js";
 import Session from "./session.js";
 
+// --- Counter Schema for Auto-Increment ---
+const counterSchema = new mongoose.Schema({
+  id: { type: String, required: true }, // e.g. "user_rollNo"
+  seq: { type: Number, default: 0 },
+});
+
+const Counter = mongoose.model("Counter", counterSchema);
+
 const userSchema = new mongoose.Schema(
   {
     personal_info: {
@@ -39,7 +47,7 @@ const userSchema = new mongoose.Schema(
       email: { type: String, required: true },
       whatsapp_no: { type: String, required: true },
       address: { type: String, required: true },
-      CNIC: { type: Number, required: true, unique: true },
+      CNIC: { type: Number, required: true },
     },
 
     academic_progress: {
@@ -89,6 +97,23 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+userSchema.pre("save", async function (next) {
+  if (this.isNew) {
+    try {
+      const counter = await Counter.findOneAndUpdate(
+        { id: "user_rollNo" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+
+      this.personal_info.rollNo = counter.seq;
+    } catch (err) {
+      return next(err);
+    }
+  }
+  next();
+});
 
 userSchema.methods.addClassHistory = function (classHistoryData) {
   this.class_history.push(classHistoryData);
