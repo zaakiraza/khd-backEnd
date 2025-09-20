@@ -12,3 +12,4 @@ userRoutes.get("/active", authenticateToken, admin, users.getActiveUser);
 userRoutes.get("/pending", authenticateToken, admin, users.getPendingUser);
 userRoutes.put("/update_personal", authenticateToken, users.update_user);
 userRoutes.put("/update_class_history/:id", authenticateToken, admin, users.update_class_history);
+userRoutes.put("/update_application_status/:id", authenticateToken, admin, users.update_application_status);

@@ -38,7 +38,24 @@ const userSchema = new mongoose.Schema(
       otpExpiresAt: { type: Date, default: undefined },
       rollNo: { type: Number, default: 0 },
       status: { type: String, enum: ["active", "inactive"], default: "active" },
-      application_status: { type: String, enum: ["pending", "accepted", "rejected"], default: "pending" },
+      application_status: {
+        type: String,
+        enum: ["pending", "accepted", "rejected"],
+        default: "pending",
+      },
+      enrolled_class: {
+        type: String,
+        enum: [
+          "null",
+          "Atfaal-Awal",
+          "Atfaal-doam",
+          "Awwal",
+          "Doam",
+          "Soam",
+          "Chaharum",
+        ],
+        default: "null",
+      },
     },
 
     guardian_info: {

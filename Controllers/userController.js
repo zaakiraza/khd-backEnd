@@ -1,3 +1,4 @@
+import user from "../Models/user.js";
 import User from "../Models/user.js";
 import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
 
@@ -23,16 +24,34 @@ const getAllUser = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const enrolled_year = req.query.enrolled_year;
+    const verified = req.query.verified;
+    const status = req.query.status;
+    const application_status = req.query.application_status;
     const skip = (page - 1) * limit;
 
-    const users = await User.find()
+    const filter = {};
+    if (enrolled_year && enrolled_year !== "null") {
+      filter["personal_info.enrolled_year"] = enrolled_year;
+    }
+    if (verified && verified !== "null") {
+      filter["personal_info.verified"] = verified;
+    }
+    if (status && status !== "null") {
+      filter["personal_info.status"] = status;
+    }
+    if (application_status && application_status !== "null") {
+      filter["personal_info.application_status"] = application_status;
+    }
+
+    const users = await User.find(filter)
       .select(
         "-__v -createdAt -updatedAt -personal_info.password -personal_info.otp -personal_info.otpExpiresAt -personal_info.isAdmin"
       )
       .skip(skip)
       .limit(limit);
 
-    const totalUsers = await User.countDocuments();
+    const totalUsers = await User.countDocuments(filter);
     const totalPages = Math.ceil(totalUsers / limit);
 
     if (users.length === 0) {
@@ -49,7 +68,13 @@ const getAllUser = async (req, res) => {
       },
     };
 
-    return successHandler(res, 200, "Users retrieved successfully", response);
+    return successHandler(
+      res,
+      200,
+      "Users retrieved successfully",
+      response,
+      totalUsers
+    );
   } catch (error) {
     return errorHandler(res, 500, "Error retrieving users", error.message);
   }
@@ -74,9 +99,18 @@ const getActiveUser = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const enrolled_class = req.query.class_name;
     const skip = (page - 1) * limit;
 
-    const users = await User.find({ "personal_info.status": "active" })
+    const filter = {
+      "personal_info.status": "active",
+    };
+
+    if (enrolled_class && enrolled_class !== "null") {
+      filter["personal_info.enrolled_class"] = enrolled_class;
+    }
+
+    const users = await User.find(filter)
       .select(
         "-__v -createdAt -updatedAt -personal_info.password -personal_info.otp -personal_info.otpExpiresAt -personal_info.isAdmin"
       )
@@ -123,7 +157,9 @@ const getPendingUser = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const totalUsers = users.length;
+    const totalUsers = await User.countDocuments({
+      "personal_info.application_status": "pending",
+    });
     const totalPages = Math.ceil(totalUsers / limit);
 
     if (users.length === 0) {
@@ -375,6 +411,54 @@ const update_class_history = async (req, res) => {
   }
 };
 
+const update_application_status = async (req, res) => {
+  const { id } = req.params;
+  const { application_status } = req.body;
+
+  try {
+    if (!application_status) {
+      return errorHandler(res, 400, "Application status is required");
+    }
+
+    if (!["pending", "approved", "rejected"].includes(application_status)) {
+      return errorHandler(res, 400, "Invalid application status");
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          "personal_info.application_status": application_status,
+          "personal_info.status": "inactive",
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return errorHandler(res, 404, "User not found");
+    }
+
+    return successHandler(
+      res,
+      200,
+      "Application status updated successfully",
+      {
+        _id: updatedUser._id,
+        application_status: updatedUser.personal_info.application_status,
+      },
+      1
+    );
+  } catch (error) {
+    return errorHandler(
+      res,
+      500,
+      "Error updating application status",
+      error.message
+    );
+  }
+};
+
 export default {
   getUser,
   getAllUser,
@@ -383,4 +467,5 @@ export default {
   getPendingUser,
   update_user,
   update_class_history,
+  update_application_status,
 };
