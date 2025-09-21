@@ -28,6 +28,7 @@ const getAllUser = async (req, res) => {
     const verified = req.query.verified;
     const status = req.query.status;
     const application_status = req.query.application_status;
+    const search = req.query.search;
     const skip = (page - 1) * limit;
 
     const filter = {};
@@ -42,6 +43,16 @@ const getAllUser = async (req, res) => {
     }
     if (application_status && application_status !== "null") {
       filter["personal_info.application_status"] = application_status;
+    }
+    if (search) {
+      filter.$or = [
+        { "personal_info.first_name": { $regex: search, $options: "i" } },
+        { "personal_info.last_name": { $regex: search, $options: "i" } },
+        { "personal_info.email": { $regex: search, $options: "i" } },
+        // { "personal_info.CNIC": { $regex: search, $options: "i" } },
+        { "personal_info.alternative_no": { $regex: search, $options: "i" } },
+        { "personal_info.whatsapp_no": { $regex: search, $options: "i" } },
+      ];
     }
 
     const users = await User.find(filter)
@@ -99,11 +110,12 @@ const getActiveUser = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const enrolled_class = req.query.class_name;
+    const enrolled_class = req.query.enrolled_class;
     const skip = (page - 1) * limit;
 
     const filter = {
       "personal_info.status": "active",
+      "personal_info.application_status": "accepted",
     };
 
     if (enrolled_class && enrolled_class !== "null") {
@@ -117,9 +129,7 @@ const getActiveUser = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const totalUsers = await User.countDocuments({
-      "personal_info.status": "active",
-    });
+    const totalUsers = await User.countDocuments(filter);
     const totalPages = Math.ceil(totalUsers / limit);
 
     if (users.length === 0) {
