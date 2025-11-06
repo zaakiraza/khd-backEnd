@@ -201,7 +201,6 @@ const verifyOtp = async (req, res) => {
 
 const resendOtp = async (req, res) => {
   const userId = req.user;
-
   const userDetail = await User.findById(userId.userId);
   if (!userDetail) {
     return errorHandler(res, 404, "User not found");
