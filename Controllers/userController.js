@@ -1,10 +1,12 @@
 import user from "../Models/user.js";
 import User from "../Models/user.js";
+import Class from "../Models/class.js";
+import Session from "../Models/session.js";
 import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
 
 const getUser = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.params.id;
     if (!userId) {
       return errorHandler(res, 400, "User ID is required");
     }
@@ -25,6 +27,7 @@ const getAllUser = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const enrolled_year = req.query.enrolled_year;
+    const enrolled_class = req.query.enrolled_class;
     const verified = req.query.verified;
     const status = req.query.status;
     const application_status = req.query.application_status;
@@ -34,6 +37,18 @@ const getAllUser = async (req, res) => {
     const filter = {};
     if (enrolled_year && enrolled_year !== "null") {
       filter["personal_info.enrolled_year"] = enrolled_year;
+    }
+    if (enrolled_class) {
+      // If enrolled_class is "null", filter for users with empty or null class_history
+      if (!enrolled_class) {
+        filter.$or = [
+          { class_history: { $exists: false } },
+          { class_history: { $eq: null } },
+          { class_history: { $size: 0 } }
+        ];
+      } else {
+        filter["personal_info.enrolled_class"] = enrolled_class;
+      }
     }
     if (verified && verified !== "null") {
       filter["personal_info.verified"] = verified;
@@ -193,7 +208,8 @@ const getPendingUser = async (req, res) => {
 };
 
 const update_user = async (req, res) => {
-  const userId = req.user.userId;
+  // const userId = req.user.userId;
+  const userId = req.params.id
   const {
     personal_info,
     guardian_info,
@@ -382,15 +398,35 @@ const update_class_history = async (req, res) => {
       return errorHandler(res, 400, "Missing required fields");
     }
 
+    // If class_name is a string, find the Class ObjectId
+    let classId = class_name;
+    if (typeof class_name === 'string' && !class_name.match(/^[0-9a-fA-F]{24}$/)) {
+      const classDoc = await Class.findOne({ class_name: class_name });
+      if (!classDoc) {
+        return errorHandler(res, 404, `Class '${class_name}' not found`);
+      }
+      classId = classDoc._id;
+    }
+
+    // If session is a string, find the Session ObjectId
+    let sessionId = session;
+    if (typeof session === 'string' && !session.match(/^[0-9a-fA-F]{24}$/)) {
+      const sessionDoc = await Session.findOne({ session_name: session });
+      if (!sessionDoc) {
+        return errorHandler(res, 404, `Session '${session}' not found`);
+      }
+      sessionId = sessionDoc._id;
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       id,
       {
         $push: {
           class_history: {
-            class_name,
+            class_name: classId,
             year,
             status,
-            session,
+            session: sessionId,
             result,
             repeat_count,
             isCompleted,
@@ -430,7 +466,7 @@ const update_application_status = async (req, res) => {
       return errorHandler(res, 400, "Application status is required");
     }
 
-    if (!["pending", "approved", "rejected"].includes(application_status)) {
+    if (!["pending", "accepted", "rejected"].includes(application_status)) {
       return errorHandler(res, 400, "Invalid application status");
     }
 

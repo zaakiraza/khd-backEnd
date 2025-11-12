@@ -101,7 +101,7 @@ const userSchema = new mongoose.Schema(
         },
         status: {
           type: String,
-          enum: ["inprogress", "completed", "pass", "fail"],
+          enum: ["inprogress", "pass", "fail"],
           required: true,
         },
         result: { type: String, enum: ["Pass", "Fail"], allowNull: true },
