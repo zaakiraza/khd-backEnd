@@ -7,6 +7,7 @@ export const classRoutes = express.Router();
 
 classRoutes.get("/single/:id", authenticateToken, admin, Class.getClass);
 classRoutes.get("/all", authenticateToken, admin, Class.getAllClasses);
+classRoutes.get("/enrolled-students", authenticateToken, admin, Class.getEnrolledStudents);
 classRoutes.post("/", authenticateToken, admin, Class.addClass);
 classRoutes.put("/:id", authenticateToken, admin, Class.updateClass);
 classRoutes.delete("/:id", authenticateToken, admin, Class.deleteClass);

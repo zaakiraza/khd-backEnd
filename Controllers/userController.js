@@ -400,12 +400,21 @@ const update_class_history = async (req, res) => {
 
     // If class_name is a string, find the Class ObjectId
     let classId = class_name;
+    let classNameString = class_name;
     if (typeof class_name === 'string' && !class_name.match(/^[0-9a-fA-F]{24}$/)) {
       const classDoc = await Class.findOne({ class_name: class_name });
       if (!classDoc) {
         return errorHandler(res, 404, `Class '${class_name}' not found`);
       }
       classId = classDoc._id;
+      classNameString = classDoc.class_name;
+    } else {
+      // If ObjectId was provided, fetch the class name
+      const classDoc = await Class.findById(class_name);
+      if (!classDoc) {
+        return errorHandler(res, 404, `Class not found`);
+      }
+      classNameString = classDoc.class_name;
     }
 
     // If session is a string, find the Session ObjectId
@@ -418,6 +427,7 @@ const update_class_history = async (req, res) => {
       sessionId = sessionDoc._id;
     }
 
+    // Update both class_history and enrolled_class in one operation
     const updatedUser = await User.findByIdAndUpdate(
       id,
       {
@@ -431,6 +441,9 @@ const update_class_history = async (req, res) => {
             repeat_count,
             isCompleted,
           },
+        },
+        $set: {
+          "personal_info.enrolled_class": classNameString,
         },
       },
       { new: true }
