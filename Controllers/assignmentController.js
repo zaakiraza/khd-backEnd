@@ -11,6 +11,7 @@ const createAssignment = async (req, res) => {
       class_id,
       subject,
       due_date,
+      end_time,
       total_marks,
       week_number,
       year,

@@ -10,6 +10,8 @@ import { attendanceRoutes } from "./Routes/attendanceRoutes.js";
 import { examScheduleRoutes } from "./Routes/examScheduleRoutes.js";
 import { assignmentRoutes } from "./Routes/assignmentRoutes.js";
 import { quizRoutes } from "./Routes/quizRoutes.js";
+import emailMatterRoutes from "./Routes/emailMatterRoutes.js";
+import messageRoutes from "./Routes/messageRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -30,6 +32,8 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/exam-schedule", examScheduleRoutes);
 app.use("/api/assignment", assignmentRoutes);
 app.use("/api/quiz", quizRoutes);
+app.use("/api/email-matter", emailMatterRoutes);
+app.use("/api/message", messageRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log("server started");
