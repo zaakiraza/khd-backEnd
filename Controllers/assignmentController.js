@@ -16,12 +16,30 @@ const createAssignment = async (req, res) => {
       week_number,
       year,
       attachments,
+      questions,
     } = req.body;
 
     // Validate class exists
     const classExists = await Class.findById(class_id);
     if (!classExists) {
       return errorHandler(res, 404, "Class not found");
+    }
+
+    // Validate questions if provided
+    if (questions && questions.length > 0) {
+      for (const question of questions) {
+        if (!question.question_text || !question.question_type || !question.marks) {
+          return errorHandler(res, 400, "Invalid question format");
+        }
+        
+        if (question.question_type === "multiple_choice" && (!question.options || question.options.length < 2)) {
+          return errorHandler(res, 400, "Multiple choice questions must have at least 2 options");
+        }
+        
+        if (question.question_type === "true_false" && (!question.options || question.options.length !== 2)) {
+          return errorHandler(res, 400, "True/False questions must have exactly 2 options");
+        }
+      }
     }
 
     // Check if assignment already exists for this week
@@ -52,6 +70,7 @@ const createAssignment = async (req, res) => {
       week_number,
       year,
       attachments: attachments || [],
+      questions: questions || [],
       created_by: req.user.id,
     });
 
@@ -78,21 +97,6 @@ const getAllAssignments = async (req, res) => {
       .populate("class_id", "class_name teacher_assigned")
       .populate("created_by", "name email")
       .sort({ due_date: -1 });
-
-    // Auto-close expired assignments
-    const now = new Date();
-    for (let assignment of assignments) {
-      if (assignment.status === 'published') {
-        const dueDate = new Date(assignment.due_date);
-        const [hours, minutes] = assignment.end_time.split(':');
-        dueDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        
-        if (now > dueDate) {
-          assignment.status = 'closed';
-          await assignment.save();
-        }
-      }
-    }
 
     successHandler(res, 200, "Assignments fetched successfully", assignments);
   } catch (error) {
@@ -134,11 +138,30 @@ const updateAssignment = async (req, res) => {
       week_number,
       year,
       attachments,
+      questions,
+      status
     } = req.body;
 
     const assignment = await Assignment.findById(id);
     if (!assignment) {
       return errorHandler(res, 404, "Assignment not found");
+    }
+
+    // Validate questions if provided
+    if (questions && questions.length > 0) {
+      for (const question of questions) {
+        if (!question.question_text || !question.question_type || !question.marks) {
+          return errorHandler(res, 400, "Invalid question format");
+        }
+        
+        if (question.question_type === "multiple_choice" && (!question.options || question.options.length < 2)) {
+          return errorHandler(res, 400, "Multiple choice questions must have at least 2 options");
+        }
+        
+        if (question.question_type === "true_false" && (!question.options || question.options.length !== 2)) {
+          return errorHandler(res, 400, "True/False questions must have exactly 2 options");
+        }
+      }
     }
 
     // If class_id is being updated, validate it
@@ -157,10 +180,12 @@ const updateAssignment = async (req, res) => {
     if (subject) assignment.subject = subject;
     if (due_date) assignment.due_date = due_date;
     if (end_time) assignment.end_time = end_time;
-    if (total_marks) assignment.total_marks = total_marks;
+    if (total_marks !== undefined) assignment.total_marks = total_marks;
     if (week_number) assignment.week_number = week_number;
     if (year) assignment.year = year;
     if (attachments) assignment.attachments = attachments;
+    if (questions !== undefined) assignment.questions = questions;
+    if (status) assignment.status = status;
 
     await assignment.save();
     successHandler(res, 200, "Assignment updated successfully", assignment);

@@ -1,5 +1,29 @@
 import mongoose from "mongoose";
 
+const questionSchema = new mongoose.Schema({
+  question_text: {
+    type: String,
+    required: true,
+  },
+  question_type: {
+    type: String,
+    enum: ["multiple_choice", "true_false", "short_answer", "essay"],
+    required: true,
+  },
+  options: [
+    {
+      option_text: String,
+      is_correct: Boolean,
+    },
+  ],
+  correct_answer: String,
+  marks: {
+    type: Number,
+    required: true,
+    min: 1,
+  },
+});
+
 const assignmentSchema = new mongoose.Schema(
   {
     title: {
@@ -38,6 +62,7 @@ const assignmentSchema = new mongoose.Schema(
       default: 100,
       min: 1,
     },
+    questions: [questionSchema],
     status: {
       type: String,
       enum: ["draft", "published", "closed"],
@@ -75,6 +100,14 @@ const assignmentSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Pre-save hook to calculate total marks from questions if questions exist
+assignmentSchema.pre("save", function (next) {
+  if (this.questions && this.questions.length > 0) {
+    this.total_marks = this.questions.reduce((sum, q) => sum + q.marks, 0);
+  }
+  next();
+});
 
 // Index for better query performance
 assignmentSchema.index({ class_id: 1, week_number: 1, year: 1 });
