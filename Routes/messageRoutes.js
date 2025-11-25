@@ -14,6 +14,9 @@ messageRoutes.post("/:id/send", authenticateToken, admin, message.sendMessageNow
 // Get All Messages
 messageRoutes.get("/", authenticateToken, admin, message.getAllMessages);
 
+// Get Student Announcements (public messages for students)
+messageRoutes.get("/announcements", authenticateToken, message.getStudentAnnouncements);
+
 // Get Message Statistics
 messageRoutes.get("/statistics", authenticateToken, admin, message.getMessageStatistics);
 

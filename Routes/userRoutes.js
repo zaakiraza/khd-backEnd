@@ -5,6 +5,7 @@ import { admin } from '../Middleware/admin.js';
 
 export const userRoutes = express.Router();
 
+userRoutes.get("/me", authenticateToken, users.getCurrentUser);
 userRoutes.get("/single/:id", authenticateToken, users.getUser);
 userRoutes.get("/all", authenticateToken, admin, users.getAllUser);
 userRoutes.get("/count", authenticateToken, admin, users.getUserCount);

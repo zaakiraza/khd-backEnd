@@ -16,7 +16,7 @@ const getSession = async (req, res) => {
 
 const getAllSession = async (req, res) => {
     try {
-        const sessions = await Session.find().select('-__v -createdAt -updatedAt');
+        const sessions = await Session.find().select('-__v -updatedAt');
         if (sessions.length === 0) {
             return errorHandler(res, 404, "No sessions found");
         }

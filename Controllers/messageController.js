@@ -250,6 +250,40 @@ const getMessageStatistics = async (req, res) => {
   }
 };
 
+// Get Student Announcements
+const getStudentAnnouncements = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    // Get user details
+    const user = await User.findById(userId);
+    if (!user) {
+      return errorHandler(res, 404, "User not found");
+    }
+
+    // Get user's current class from class_history
+    const currentClass = user.class_history?.find(ch => ch.status === "active");
+    
+    // Build query for announcements
+    const query = {
+      status: "sent",
+      $or: [
+        { "recipients.all": true }, // All students
+        { "recipients.filters.class_ids": currentClass?.class_name }, // User's class
+      ]
+    };
+
+    const announcements = await Message.find(query)
+      .select("subject message type sent_at createdAt")
+      .sort({ sent_at: -1 })
+      .limit(50);
+
+    successHandler(res, 200, "Announcements fetched successfully", announcements, announcements.length);
+  } catch (error) {
+    errorHandler(res, 500, error.message);
+  }
+};
+
 export {
   createMessage,
   sendMessageNow,
@@ -258,4 +292,5 @@ export {
   updateMessage,
   deleteMessage,
   getMessageStatistics,
+  getStudentAnnouncements,
 };

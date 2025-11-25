@@ -4,6 +4,33 @@ import Class from "../Models/class.js";
 import Session from "../Models/session.js";
 import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
 
+const getCurrentUser = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    if (!userId) {
+      return errorHandler(res, 400, "User ID not found in token");
+    }
+    const userData = await User.findOne({ _id: userId })
+      .populate({
+        path: 'class_history.class_name',
+        select: 'class_name'
+      })
+      .populate({
+        path: 'class_history.session',
+        select: 'session_name'
+      })
+      .select(
+        "-__v -createdAt -updatedAt -personal_info.password -personal_info.otp -personal_info.otpExpiresAt -personal_info.isAdmin"
+      );
+    if (!userData) {
+      return errorHandler(res, 404, "User not found");
+    }
+    return successHandler(res, 200, "User retrieved successfully", userData, 1);
+  } catch (error) {
+    return errorHandler(res, 500, "Error retrieving user", error.message);
+  }
+};
+
 const getUser = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -519,6 +546,7 @@ const update_application_status = async (req, res) => {
 };
 
 export default {
+  getCurrentUser,
   getUser,
   getAllUser,
   getUserCount,

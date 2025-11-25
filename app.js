@@ -12,6 +12,10 @@ import { assignmentRoutes } from "./Routes/assignmentRoutes.js";
 import { quizRoutes } from "./Routes/quizRoutes.js";
 import emailMatterRoutes from "./Routes/emailMatterRoutes.js";
 import messageRoutes from "./Routes/messageRoutes.js";
+import { lessonPlanRoutes } from "./Routes/lessonPlanRoutes.js";
+import { leaveRoutes } from "./Routes/leaveRoutes.js";
+import { resultRoutes } from "./Routes/resultRoutes.js";
+import { reportRoutes } from "./Routes/reportRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -34,6 +38,10 @@ app.use("/api/assignment", assignmentRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/email-matter", emailMatterRoutes);
 app.use("/api/message", messageRoutes);
+app.use("/api/lesson-plan", lessonPlanRoutes);
+app.use("/api/leave", leaveRoutes);
+app.use("/api/result", resultRoutes);
+app.use("/api/report", reportRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log("server started");
