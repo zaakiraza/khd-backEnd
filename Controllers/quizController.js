@@ -15,6 +15,7 @@ const createQuiz = async (req, res) => {
       duration,
       passing_marks,
       questions,
+      end_time,
     } = req.body;
 
     // Validate class exists
@@ -36,6 +37,7 @@ const createQuiz = async (req, res) => {
       subject,
       quiz_date,
       start_time,
+      end_time,
       duration,
       passing_marks,
       questions,
@@ -67,13 +69,13 @@ const getAllQuizzes = async (req, res) => {
     // Auto-close expired quizzes
     const now = new Date();
     for (let quiz of quizzes) {
-      if (quiz.status === 'ongoing' || quiz.status === 'published') {
+      if (quiz.status === 'published') {
         const quizDate = new Date(quiz.quiz_date);
         const [hours, minutes] = quiz.end_time.split(':');
         quizDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         
         if (now > quizDate) {
-          quiz.status = 'completed';
+          quiz.status = 'close';
           await quiz.save();
         }
       }
@@ -176,7 +178,7 @@ const updateQuizStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!["draft", "published", "ongoing", "completed"].includes(status)) {
+    if (!["draft", "published", "close"].includes(status)) {
       return errorHandler(res, 400, "Invalid status");
     }
 
@@ -249,7 +251,7 @@ const getUpcomingQuizzes = async (req, res) => {
 
     const quizzes = await Quiz.find({
       quiz_date: { $gte: today, $lte: nextWeek },
-      status: { $in: ["published", "ongoing"] },
+      status: "published",
       isActive: true,
     })
       .populate("class_id", "class_name")

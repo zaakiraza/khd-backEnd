@@ -79,7 +79,7 @@ const quizSchema = new mongoose.Schema(
     questions: [questionSchema],
     status: {
       type: String,
-      enum: ["draft", "published", "ongoing", "completed"],
+      enum: ["draft", "published", "close"],
       default: "draft",
     },
     created_by: {
@@ -112,7 +112,7 @@ quizSchema.pre("save", function (next) {
 
 // Virtual property to check if quiz has expired
 quizSchema.virtual('isExpired').get(function() {
-  if (this.status === 'completed') return true;
+  if (this.status === 'close') return true;
   
   const now = new Date();
   const quizDate = new Date(this.quiz_date);
