@@ -110,6 +110,17 @@ export const publishResults = async (req, res) => {
     }
 };
 
+// Unpublish Results (Bulk)
+export const unpublishResults = async (req, res) => {
+    try {
+        const { exam_id } = req.body;
+        await Result.updateMany({ exam_id }, { isPublished: false });
+        res.status(200).json({ message: "Results unpublished successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error unpublishing results", error: error.message });
+    }
+};
+
 // Delete Result
 export const deleteResult = async (req, res) => {
     try {
@@ -126,5 +137,84 @@ export const deleteResult = async (req, res) => {
         res.status(200).json({ message: "Result deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: "Error deleting result", error: error.message });
+    }
+};
+
+// Submit Exam Result (Student)
+export const submitExamResult = async (req, res) => {
+    try {
+        const student_id = req.user.userId;
+        const {
+            exam_id,
+            exam_name,
+            class_id,
+            subject,
+            marks_obtained,
+            total_marks,
+        } = req.body;
+
+        // Check if result already exists
+        const existingResult = await Result.findOne({ student_id, exam_id });
+        if (existingResult) {
+            return res.status(400).json({ 
+                success: false,
+                message: "You have already submitted this exam" 
+            });
+        }
+
+        const student = await User.findById(student_id);
+        if (!student) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Student not found" 
+            });
+        }
+
+        const newResult = new Result({
+            student_id,
+            student_name: `${student.personal_info.first_name} ${student.personal_info.last_name}`,
+            exam_id,
+            exam_name,
+            class_id,
+            subject,
+            marks_obtained,
+            total_marks,
+            isPublished: false, // Results need to be published by admin
+        });
+
+        await newResult.save();
+        res.status(201).json({ 
+            success: true,
+            message: "Exam submitted successfully", 
+            data: newResult 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false,
+            message: "Error submitting exam", 
+            error: error.message 
+        });
+    }
+};
+
+// Check if student has already attempted an exam
+export const checkExamAttempt = async (req, res) => {
+    try {
+        const student_id = req.user.userId;
+        const { exam_id } = req.params;
+
+        const existingResult = await Result.findOne({ student_id, exam_id });
+        
+        res.status(200).json({ 
+            success: true,
+            attempted: !!existingResult,
+            result: existingResult || null
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false,
+            message: "Error checking exam attempt", 
+            error: error.message 
+        });
     }
 };

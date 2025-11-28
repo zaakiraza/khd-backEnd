@@ -118,39 +118,51 @@ const getEnrolledStudents = async (req, res) => {
             return errorHandler(res, 400, "Either class_name or class_id is required");
         }
 
-        let query = {
-            status: "active",
-            application_status: "accepted",
-            verified: true
-        };
+        // Get class info first
+        let classInfo = null;
+        let targetClassId = class_id;
 
-        // If class_id is provided, first get the class_name
         if (class_id) {
-            const classData = await Class.findById(class_id);
-            if (!classData) {
+            classInfo = await Class.findById(class_id);
+            if (!classInfo) {
                 return errorHandler(res, 404, "Class not found");
             }
-            query["personal_info.enrolled_class"] = classData.class_name;
         } else {
-            query["personal_info.enrolled_class"] = class_name;
+            classInfo = await Class.findOne({ class_name });
+            if (!classInfo) {
+                return errorHandler(res, 404, "Class not found");
+            }
+            targetClassId = classInfo._id;
         }
 
-        const students = await User.find(query)
-            .select("personal_info")
-            .sort({ "personal_info.rollNo": 1 });
+        // Find students who have this class in their active class_history
+        const students = await User.find({
+            "personal_info.verified": true,
+            "personal_info.status": "active",
+            "personal_info.application_status": "accepted",
+            "class_history": {
+                $elemMatch: {
+                    class_name: targetClassId,
+                    status: { $in: ["inprogress", "active"] }
+                }
+            }
+        })
+        .select("personal_info class_history")
+        .sort({ "personal_info.rollNo": 1 });
 
-        // Get class info for response
-        let classInfo = null;
-        if (class_id) {
-            classInfo = await Class.findById(class_id).select("class_name teacher_assigned students_enrolled isActive");
-        } else {
-            classInfo = await Class.findOne({ class_name }).select("class_name teacher_assigned students_enrolled isActive");
-        }
+        // Format the response to match expected structure
+        const formattedStudents = students.map(student => ({
+            _id: student._id,
+            name: `${student.personal_info.first_name} ${student.personal_info.last_name}`,
+            roll_no: student.personal_info.rollNo,
+            email: student.personal_info.email,
+            personal_info: student.personal_info
+        }));
 
         return successHandler(res, 200, "Enrolled students retrieved successfully", {
             class: classInfo,
-            total_students: students.length,
-            students: students
+            total_students: formattedStudents.length,
+            students: formattedStudents
         });
     } catch (error) {
         return errorHandler(res, 500, "Error retrieving enrolled students", error.message);

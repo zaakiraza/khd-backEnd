@@ -402,6 +402,29 @@ const update_user = async (req, res) => {
   }
 };
 
+// Helper function to update class student count
+const updateClassStudentCount = async (classId) => {
+  try {
+    const studentCount = await User.countDocuments({
+      "personal_info.verified": true,
+      "personal_info.status": "active",
+      "personal_info.application_status": "accepted",
+      "class_history": {
+        $elemMatch: {
+          class_name: classId,
+          status: { $in: ["inprogress", "active"] }
+        }
+      }
+    });
+
+    await Class.findByIdAndUpdate(classId, {
+      students_enrolled: studentCount
+    });
+  } catch (error) {
+    console.error("Error updating class student count:", error);
+  }
+};
+
 const update_class_history = async (req, res) => {
   const { id } = req.params;
   const {
@@ -480,6 +503,9 @@ const update_class_history = async (req, res) => {
       return errorHandler(res, 404, "User not found");
     }
 
+    // Update the class student count
+    await updateClassStudentCount(classId);
+
     return successHandler(
       res,
       200,
@@ -510,12 +536,16 @@ const update_application_status = async (req, res) => {
       return errorHandler(res, 400, "Invalid application status");
     }
 
+    // Get user's current class before updating
+    const currentUser = await User.findById(id);
+    const currentClassId = currentUser?.class_history?.find(ch => ch.status === "inprogress")?.class_name;
+
     const updatedUser = await User.findByIdAndUpdate(
       id,
       {
         $set: {
           "personal_info.application_status": application_status,
-          "personal_info.status": "inactive",
+          "personal_info.status": application_status === "accepted" ? "active" : "inactive",
         },
       },
       { new: true }
@@ -523,6 +553,11 @@ const update_application_status = async (req, res) => {
 
     if (!updatedUser) {
       return errorHandler(res, 404, "User not found");
+    }
+
+    // Update class student count if user has a class
+    if (currentClassId) {
+      await updateClassStudentCount(currentClassId);
     }
 
     return successHandler(

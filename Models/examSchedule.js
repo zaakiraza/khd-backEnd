@@ -60,6 +60,25 @@ const examScheduleSchema = new mongoose.Schema(
       ref: "User",
       required: false,
     },
+    questions: [
+      {
+        question_text: {
+          type: String,
+          required: false,
+        },
+        question_type: {
+          type: String,
+          enum: ["mcq", "true_false", "short_answer", "essay"],
+          default: "mcq",
+        },
+        options: [String],
+        correct_answer: String,
+        marks: {
+          type: Number,
+          default: 1,
+        },
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,

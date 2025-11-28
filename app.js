@@ -18,6 +18,7 @@ import { lessonPlanRoutes } from "./Routes/lessonPlanRoutes.js";
 import { leaveRoutes } from "./Routes/leaveRoutes.js";
 import { resultRoutes } from "./Routes/resultRoutes.js";
 import { reportRoutes } from "./Routes/reportRoutes.js";
+import { newsletterRoutes } from "./Routes/newsletterRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -46,6 +47,7 @@ app.use("/api/lesson-plan", lessonPlanRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/result", resultRoutes);
 app.use("/api/report", reportRoutes);
+app.use("/api/newsletter", newsletterRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log("server started");

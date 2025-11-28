@@ -20,7 +20,16 @@ router.put("/:id", authenticateToken, admin, resultController.updateResult);
 // Publish Results (Admin only)
 router.post("/publish", authenticateToken, admin, resultController.publishResults);
 
+// Unpublish Results (Admin only)
+router.post("/unpublish", authenticateToken, admin, resultController.unpublishResults);
+
 // Delete Result (Admin only)
 router.delete("/:id", authenticateToken, admin, resultController.deleteResult);
+
+// Submit Exam Result (Student)
+router.post("/submit-exam", authenticateToken, resultController.submitExamResult);
+
+// Check if student has attempted exam
+router.get("/check-attempt/:exam_id", authenticateToken, resultController.checkExamAttempt);
 
 export const resultRoutes = router;
