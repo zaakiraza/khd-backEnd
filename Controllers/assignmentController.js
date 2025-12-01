@@ -1,6 +1,7 @@
 import Assignment from "../Models/assignment.js";
 import Class from "../Models/class.js";
 import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
+import { sendAnnouncementEmail } from "../Utlis/notificationService.js";
 
 // Create Assignment
 const createAssignment = async (req, res) => {
@@ -75,6 +76,19 @@ const createAssignment = async (req, res) => {
     });
 
     await assignment.save();
+    
+    // Send assignment notification to students in the class
+    try {
+      await sendAnnouncementEmail({
+        title: `New Assignment: ${title}`,
+        content: `A new assignment "${title}" has been posted for ${subject}. Due Date: ${new Date(due_date).toLocaleDateString()} at ${end_time}. Total Marks: ${total_marks}`,
+        targetAudience: `class_${class_id}`
+      });
+    } catch (notificationError) {
+      console.error("Failed to send assignment notification:", notificationError);
+      // Don't fail the assignment creation if notification fails
+    }
+    
     successHandler(res, 201, "Assignment created successfully", assignment);
   } catch (error) {
     errorHandler(res, 500, error.message);

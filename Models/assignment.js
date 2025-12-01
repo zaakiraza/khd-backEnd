@@ -115,14 +115,14 @@ assignmentSchema.index({ due_date: 1, status: 1 });
 assignmentSchema.index({ status: 1, isActive: 1 });
 
 // Virtual property to check if assignment has expired
-assignmentSchema.virtual('isExpired').get(function() {
-  if (this.status === 'closed') return true;
-  
+assignmentSchema.virtual("isExpired").get(function () {
+  if (this.status === "closed") return true;
+
   const now = new Date();
   const dueDate = new Date(this.due_date);
-  const [hours, minutes] = this.end_time.split(':');
+  const [hours, minutes] = this.end_time.split(":");
   dueDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-  
+
   return now > dueDate;
 });
 

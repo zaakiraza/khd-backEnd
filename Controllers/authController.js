@@ -1,6 +1,8 @@
 import User from "../Models/user.js";
 import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
 import { sendEmail } from "../Utlis/nodeMailer.js";
+import { getEmailTemplate } from "../Utlis/emailTemplateHelper.js";
+import { sendWelcomeEmail } from "../Utlis/notificationService.js";
 import jwt from "jsonwebtoken";
 import { hash, compare } from "bcrypt";
 import dotenv from "dotenv";
@@ -132,11 +134,26 @@ const signup = async (req, res) => {
     });
     const savedUser = await userDetails.save();
 
-    await sendEmail(
-      email,
-      "Account verification Email",
-      `Dear ${first_name},\n\nThank you for registering at Khuddam Learning online Classes. Your registration is successfully done. Your OTP is ${otp}`
-    );
+    // Get OTP email template
+    const otpTemplate = await getEmailTemplate('otp', {
+      name: first_name,
+      otp: otp
+    });
+
+    if (otpTemplate) {
+      await sendEmail({
+        to: email,
+        subject: otpTemplate.subject,
+        html: otpTemplate.body
+      });
+    } else {
+      // Fallback to plain text if template not found
+      await sendEmail({
+        to: email,
+        subject: "Account verification Email",
+        text: `Dear ${first_name},\n\nThank you for registering at Khuddam Learning online Classes. Your registration is successfully done. Your OTP is ${otp}`
+      });
+    }
 
     const token = jwt.sign(
       { userId: userDetails._id },
@@ -190,6 +207,14 @@ const verifyOtp = async (req, res) => {
     userDetail.personal_info.otpExpiresAt = undefined;
     await userDetail.save();
 
+    // Send welcome email to newly verified student
+    try {
+      await sendWelcomeEmail(userDetail._id);
+    } catch (welcomeEmailError) {
+      console.error("Failed to send welcome email:", welcomeEmailError);
+      // Don't fail verification if welcome email fails
+    }
+
     return successHandler(res, 200, "OTP verified successfully", {
       userId: userDetail._id,
       verified: userDetail.personal_info.verified,
@@ -221,11 +246,26 @@ const resendOtp = async (req, res) => {
   userDetail.personal_info.otpExpiresAt = otpExpiresAt;
   await userDetail.save();
 
-  await sendEmail(
-    userDetail.personal_info.email,
-    "Request for resend OTP",
-    `Dear ${userDetail.personal_info.first_name},\nYour OTP code is: ${otp}. It will expire in 1 minute.`
-  );
+  // Get OTP email template
+  const otpTemplate = await getEmailTemplate('otp', {
+    name: userDetail.personal_info.first_name,
+    otp: otp
+  });
+
+  if (otpTemplate) {
+    await sendEmail({
+      to: userDetail.personal_info.email,
+      subject: otpTemplate.subject,
+      html: otpTemplate.body
+    });
+  } else {
+    // Fallback to plain text if template not found
+    await sendEmail({
+      to: userDetail.personal_info.email,
+      subject: "Request for resend OTP",
+      text: `Dear ${userDetail.personal_info.first_name},\nYour OTP code is: ${otp}. It will expire in 1 minute.`
+    });
+  }
   return successHandler(res, 200, "verification code send successfully");
 };
 
@@ -282,11 +322,26 @@ const forgotPasswordOtp = async (req, res) => {
     otpExpiresAt: otpExpiresAt,
   };
 
-  await sendEmail(
-    email,
-    "Your Email Verification Code",
-    `Dear ${userDetails.userName}, \n Your OTP code is: ${otp}. It will expire in 1 minute.`
-  );
+  // Get OTP email template
+  const otpTemplate = await getEmailTemplate('otp', {
+    name: userDetails.userName,
+    otp: otp
+  });
+
+  if (otpTemplate) {
+    await sendEmail({
+      to: email,
+      subject: otpTemplate.subject,
+      html: otpTemplate.body
+    });
+  } else {
+    // Fallback to plain text if template not found
+    await sendEmail({
+      to: email,
+      subject: "Your Email Verification Code",
+      text: `Dear ${userDetails.userName}, \n Your OTP code is: ${otp}. It will expire in 1 minute.`
+    });
+  }
 
   return successHandler(
     res,
@@ -337,11 +392,26 @@ const forgotPassword = async (req, res) => {
   userDetail.personal_info.password = await hash(newPassword, 12);
   await userDetail.save();
 
-  await sendEmail(
-    userDetail.personal_info.email,
-    "Forget password request",
-    `Dear ${userDetail.userName}, \n Your new password is ${newPassword}`
-  );
+  // Get password reset email template
+  const passwordTemplate = await getEmailTemplate('custom', {
+    userName: userDetail.userName,
+    newPassword: newPassword
+  });
+
+  if (passwordTemplate) {
+    await sendEmail({
+      to: userDetail.personal_info.email,
+      subject: passwordTemplate.subject,
+      html: passwordTemplate.body
+    });
+  } else {
+    // Fallback to plain text if template not found
+    await sendEmail({
+      to: userDetail.personal_info.email,
+      subject: "Forget password request",
+      text: `Dear ${userDetail.userName}, \n Your new password is ${newPassword}`
+    });
+  }
   return successHandler(
     res,
     200,

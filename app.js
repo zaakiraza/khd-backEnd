@@ -19,6 +19,9 @@ import { leaveRoutes } from "./Routes/leaveRoutes.js";
 import { resultRoutes } from "./Routes/resultRoutes.js";
 import { reportRoutes } from "./Routes/reportRoutes.js";
 import { newsletterRoutes } from "./Routes/newsletterRoutes.js";
+import notificationRoutes from "./Routes/notificationRoutes.js";
+// Import cron jobs for automated notifications
+import "./cronJobs.js";
 
 dotenv.config();
 connectDB();
@@ -48,6 +51,7 @@ app.use("/api/leave", leaveRoutes);
 app.use("/api/result", resultRoutes);
 app.use("/api/report", reportRoutes);
 app.use("/api/newsletter", newsletterRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log("server started");

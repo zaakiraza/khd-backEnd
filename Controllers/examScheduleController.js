@@ -1,6 +1,7 @@
 import ExamSchedule from "../Models/examSchedule.js";
 import Class from "../Models/class.js";
 import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
+import { sendAnnouncementEmail } from "../Utlis/notificationService.js";
 
 // Create new exam schedule
 const createExamSchedule = async (req, res) => {
@@ -46,6 +47,19 @@ const createExamSchedule = async (req, res) => {
     });
 
     await examSchedule.save();
+    
+    // Send exam notification to students in the class
+    try {
+      await sendAnnouncementEmail({
+        title: `Exam Scheduled: ${exam_name}`,
+        content: `An exam "${exam_name}" has been scheduled for ${subject}. Date: ${new Date(exam_date).toLocaleDateString()} from ${start_time} to ${end_time}. Duration: ${duration} minutes. Total Marks: ${total_marks}`,
+        targetAudience: `class_${class_id}`
+      });
+    } catch (notificationError) {
+      console.error("Failed to send exam notification:", notificationError);
+      // Don't fail the exam creation if notification fails
+    }
+    
     return successHandler(res, 201, "Exam schedule created successfully", examSchedule);
   } catch (error) {
     return errorHandler(res, 500, "Error creating exam schedule", error.message);

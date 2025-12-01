@@ -1,6 +1,7 @@
 import Newsletter from "../Models/newsletter.js";
 import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
 import { sendEmail } from "../Utlis/nodeMailer.js";
+import { getEmailTemplate } from "../Utlis/emailTemplateHelper.js";
 import crypto from "crypto";
 
 // Subscribe to Newsletter
@@ -274,62 +275,77 @@ const sendVerificationEmail = async (email, token) => {
   try {
     const verificationLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/newsletter/verify/${token}`;
     
-    const emailContent = {
-      to: email,
-      subject: "Verify Your Newsletter Subscription - Khuddam Learning",
-      html: `
-        <div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-          <div style="background: linear-gradient(135deg, #293c5d 0%, #4a5f8f 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Khuddam Learning!</h1>
-          </div>
-          
-          <div style="background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <h2 style="color: #293c5d; margin-bottom: 20px;">Verify Your Email Address</h2>
-            
-            <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 25px;">
-              Thank you for subscribing to our newsletter! Please click the button below to verify your email address and start receiving updates about:
-            </p>
-            
-            <ul style="color: #666; line-height: 1.8; margin-bottom: 30px;">
-              <li>📚 New course announcements</li>
-              <li>📅 Class schedules and updates</li>
-              <li>🎉 Educational events and activities</li>
-              <li>🏆 Student achievements and results</li>
-            </ul>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${verificationLink}" 
-                 style="background: linear-gradient(135deg, #293c5d 0%, #4a5f8f 100%); 
-                        color: white; 
-                        padding: 15px 30px; 
-                        text-decoration: none; 
-                        border-radius: 25px; 
-                        font-weight: bold; 
-                        font-size: 16px; 
-                        display: inline-block;
-                        box-shadow: 0 4px 15px rgba(41, 60, 93, 0.3);">
-                Verify My Email
-              </a>
-            </div>
-            
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 30px;">
-              <p style="color: #666; font-size: 14px; margin: 0; text-align: center;">
-                If the button doesn't work, copy and paste this link into your browser:<br>
-                <a href="${verificationLink}" style="color: #293c5d; word-break: break-all;">${verificationLink}</a>
-              </p>
-            </div>
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                If you didn't subscribe to this newsletter, you can safely ignore this email.
-              </p>
-            </div>
-          </div>
-        </div>
-      `,
-    };
+    // Get newsletter verification template from database
+    const newsletterTemplate = await getEmailTemplate('notification', {
+      email: email
+    });
 
-    await sendEmail(emailContent);
+    if (newsletterTemplate) {
+      const emailContent = {
+        to: email,
+        subject: newsletterTemplate.subject,
+        html: newsletterTemplate.body
+      };
+      await sendEmail(emailContent);
+    } else {
+      // Fallback to original template if database template not found
+      const emailContent = {
+        to: email,
+        subject: "Verify Your Newsletter Subscription - Khuddam Learning",
+        html: `
+          <div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+            <div style="background: linear-gradient(135deg, #293c5d 0%, #4a5f8f 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Khuddam Learning!</h1>
+            </div>
+            
+            <div style="background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <h2 style="color: #293c5d; margin-bottom: 20px;">Verify Your Email Address</h2>
+              
+              <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 25px;">
+                Thank you for subscribing to our newsletter! Please click the button below to verify your email address and start receiving updates about:
+              </p>
+              
+              <ul style="color: #666; line-height: 1.8; margin-bottom: 30px;">
+                <li>📚 New course announcements</li>
+                <li>📅 Class schedules and updates</li>
+                <li>🎉 Educational events and activities</li>
+                <li>🏆 Student achievements and results</li>
+              </ul>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationLink}" 
+                   style="background: linear-gradient(135deg, #293c5d 0%, #4a5f8f 100%); 
+                          color: white; 
+                          padding: 15px 30px; 
+                          text-decoration: none; 
+                          border-radius: 25px; 
+                          font-weight: bold; 
+                          font-size: 16px; 
+                          display: inline-block;
+                          box-shadow: 0 4px 15px rgba(41, 60, 93, 0.3);">
+                  Verify My Email
+                </a>
+              </div>
+              
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 30px;">
+                <p style="color: #666; font-size: 14px; margin: 0; text-align: center;">
+                  If the button doesn't work, copy and paste this link into your browser:<br>
+                  <a href="${verificationLink}" style="color: #293c5d; word-break: break-all;">${verificationLink}</a>
+                </p>
+              </div>
+              
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #999; font-size: 12px; margin: 0;">
+                  If you didn't subscribe to this newsletter, you can safely ignore this email.
+                </p>
+              </div>
+            </div>
+          </div>
+        `,
+      };
+
+      await sendEmail(emailContent);
+    }
   } catch (error) {
     console.error("Error sending verification email:", error);
     throw new Error("Failed to send verification email");
