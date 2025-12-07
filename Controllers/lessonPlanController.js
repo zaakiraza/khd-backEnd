@@ -12,6 +12,8 @@ export const createLessonPlan = async (req, res) => {
             week_number,
             year,
             content,
+            file_url,
+            file_name,
             status,
             attachments,
         } = req.body;
@@ -30,6 +32,8 @@ export const createLessonPlan = async (req, res) => {
             week_number,
             year,
             content,
+            file_url,
+            file_name,
             status,
             attachments,
             created_by: req.user.userId,

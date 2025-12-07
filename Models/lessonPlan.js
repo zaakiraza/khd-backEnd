@@ -34,8 +34,16 @@ const lessonPlanSchema = new mongoose.Schema(
       required: true,
     },
     content: {
-      type: String, // Can be HTML or Markdown
-      required: true,
+      type: String, // Can be HTML or Markdown - Legacy field
+      required: false,
+    },
+    file_url: {
+      type: String, // Cloudinary URL for PDF/PPT
+      required: false,
+    },
+    file_name: {
+      type: String, // Original filename
+      required: false,
     },
     status: {
       type: String,

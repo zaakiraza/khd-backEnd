@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import fileUpload from "express-fileupload";
 import { connectDB } from "./Utlis/DB.js";
 import { authRoutes } from "./Routes/authRoutes.js";
 import { sessionRoutes } from "./Routes/sessionRoutes.js";
@@ -21,7 +22,7 @@ import { reportRoutes } from "./Routes/reportRoutes.js";
 import { newsletterRoutes } from "./Routes/newsletterRoutes.js";
 import notificationRoutes from "./Routes/notificationRoutes.js";
 // Import cron jobs for automated notifications
-import "./cronJobs.js";
+import "./Utlis/cronJobs.js";
 
 dotenv.config();
 connectDB();
@@ -33,6 +34,12 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+  })
+);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/session", sessionRoutes);

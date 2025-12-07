@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { sendAssignmentReminders, sendExamNotifications } from "./Utlis/notificationService.js";
+import { sendAssignmentReminders, sendExamNotifications } from "./notificationService.js";
 
 /**
  * Cron job scheduler for automated email notifications
