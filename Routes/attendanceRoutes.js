@@ -1,19 +1,27 @@
 import express from "express";
 import {
+  getAllAttendance,
   markAttendance,
   getAttendanceByClassAndDate,
   getAttendanceByClass,
   getAttendanceByStudent,
   deleteAttendance,
   getAttendanceStats,
+  uploadZoomAttendance,
 } from "../Controllers/attendanceController.js";
 import { authenticateToken } from "../Middleware/authentication.js";
 import { admin } from "../Middleware/admin.js";
 
 export const attendanceRoutes = express.Router();
 
+// Get all attendance records
+attendanceRoutes.get("/", authenticateToken, admin, getAllAttendance);
+
 // Mark or update attendance
 attendanceRoutes.post("/", authenticateToken, admin, markAttendance);
+
+// Upload attendance from Zoom
+attendanceRoutes.post("/zoom", authenticateToken, admin, uploadZoomAttendance);
 
 // Get attendance by class and date
 attendanceRoutes.get(

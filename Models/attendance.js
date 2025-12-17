@@ -42,8 +42,30 @@ const attendanceSchema = new mongoose.Schema(
           type: Date,
           default: Date.now,
         },
+        // Zoom-specific fields
+        zoom_name: {
+          type: String,
+          default: null,
+        },
+        zoom_duration: {
+          type: Number,
+          default: 0,
+        },
+        zoom_join_time: {
+          type: String,
+          default: null,
+        },
+        zoom_leave_time: {
+          type: String,
+          default: null,
+        },
       },
     ],
+    source: {
+      type: String,
+      enum: ["manual", "zoom"],
+      default: "manual",
+    },
     marked_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

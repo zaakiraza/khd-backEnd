@@ -3,6 +3,29 @@ import Class from "../Models/class.js";
 import User from "../Models/user.js";
 import { successHandler, errorHandler } from "../Utlis/ResponseHandler.js";
 
+// Get all attendance records
+const getAllAttendance = async (req, res) => {
+  try {
+    const attendanceRecords = await Attendance.find()
+      .sort({ date: -1 })
+      .populate("marked_by", "personal_info.first_name personal_info.last_name");
+
+    return successHandler(
+      res,
+      200,
+      "All attendance records retrieved successfully",
+      attendanceRecords
+    );
+  } catch (error) {
+    return errorHandler(
+      res,
+      500,
+      "Error retrieving attendance records",
+      error.message
+    );
+  }
+};
+
 // Create or update attendance for a class on a specific date
 const markAttendance = async (req, res) => {
   try {
@@ -300,11 +323,135 @@ const getAttendanceStats = async (req, res) => {
   }
 };
 
+// Upload attendance from Zoom participant report
+const uploadZoomAttendance = async (req, res) => {
+  try {
+    const { class_id, class_name, date, attendance, zoom_data } = req.body;
+    const marked_by = req.user._id;
+
+    // Validation
+    if (!class_id || !class_name || !date || !attendance || !Array.isArray(attendance)) {
+      return errorHandler(res, 400, "Missing required fields");
+    }
+
+    if (attendance.length === 0) {
+      return errorHandler(res, 400, "No attendance records provided");
+    }
+
+    // Validate date is not in the future
+    const attendanceDate = new Date(date);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (attendanceDate > today) {
+      return errorHandler(res, 400, "Cannot mark attendance for future dates");
+    }
+
+    // Calculate statistics
+    const total_students = attendance.length;
+    const total_present = attendance.filter((a) => a.status === "present").length;
+    const total_absent = attendance.filter((a) => a.status === "absent").length;
+    const total_late = attendance.filter((a) => a.status === "late").length;
+    const total_leave = attendance.filter((a) => a.status === "leave").length;
+
+    // Prepare attendance records with student details
+    const attendance_records = await Promise.all(
+      attendance.map(async (record) => {
+        const student = await User.findById(record.student_id).select("personal_info");
+        if (!student) {
+          console.log(`Student not found: ${record.student_id}`);
+          return null;
+        }
+        
+        // Find corresponding zoom data
+        const zoomInfo = zoom_data?.find(z => z.student_id === record.student_id);
+        
+        return {
+          student_id: record.student_id,
+          student_name: `${student.personal_info.first_name} ${student.personal_info.last_name}`,
+          roll_no: student.personal_info.rollNo?.toString() || '',
+          status: record.status,
+          marked_at: new Date(),
+          zoom_name: zoomInfo?.zoom_name || null,
+          zoom_duration: zoomInfo?.duration || 0,
+          zoom_join_time: zoomInfo?.join_time || null,
+          zoom_leave_time: zoomInfo?.leave_time || null,
+        };
+      })
+    );
+
+    // Filter out null records
+    const validRecords = attendance_records.filter(r => r !== null);
+
+    // Check if attendance already exists for this class and date
+    const existingAttendance = await Attendance.findOne({
+      class_id,
+      date: attendanceDate,
+    });
+
+    if (existingAttendance) {
+      // Update existing attendance
+      existingAttendance.attendance_records = validRecords;
+      existingAttendance.marked_by = marked_by;
+      existingAttendance.total_students = total_students;
+      existingAttendance.total_present = total_present;
+      existingAttendance.total_absent = total_absent;
+      existingAttendance.total_late = total_late;
+      existingAttendance.total_leave = total_leave;
+      existingAttendance.source = 'zoom';
+
+      await existingAttendance.save();
+
+      return successHandler(
+        res,
+        200,
+        "Zoom attendance updated successfully",
+        existingAttendance
+      );
+    } else {
+      // Create new attendance
+      const newAttendance = new Attendance({
+        class_id,
+        class_name,
+        date: attendanceDate,
+        attendance_records: validRecords,
+        marked_by,
+        total_students,
+        total_present,
+        total_absent,
+        total_late,
+        total_leave,
+        source: 'zoom',
+      });
+
+      await newAttendance.save();
+
+      return successHandler(
+        res,
+        201,
+        "Zoom attendance saved successfully",
+        newAttendance
+      );
+    }
+  } catch (error) {
+    console.error("Error uploading Zoom attendance:", error);
+    if (error.code === 11000) {
+      return errorHandler(
+        res,
+        400,
+        "Attendance already exists for this class and date"
+      );
+    }
+    return errorHandler(res, 500, "Error saving Zoom attendance", error.message);
+  }
+};
+
 export {
+  getAllAttendance,
   markAttendance,
   getAttendanceByClassAndDate,
   getAttendanceByClass,
   getAttendanceByStudent,
   deleteAttendance,
   getAttendanceStats,
+  uploadZoomAttendance,
 };

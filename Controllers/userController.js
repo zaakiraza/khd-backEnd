@@ -580,6 +580,210 @@ const update_application_status = async (req, res) => {
   }
 };
 
+// Get students by class and result status (pass/fail/inprogress)
+const getStudentsByClassResult = async (req, res) => {
+  try {
+    const { class_name, result_status } = req.query;
+
+    if (!class_name) {
+      return errorHandler(res, 400, "Class name is required");
+    }
+
+    // Find the class to get its ID
+    const classDoc = await Class.findOne({ class_name });
+    if (!classDoc) {
+      return errorHandler(res, 404, `Class '${class_name}' not found`);
+    }
+
+    // Build the query based on result_status
+    let statusFilter;
+    if (result_status === "passed") {
+      statusFilter = { status: "pass" };
+    } else if (result_status === "failed") {
+      statusFilter = { status: { $in: ["fail", "inprogress"] } };
+    } else {
+      statusFilter = {};
+    }
+
+    // Find students with the specified class in their class_history
+    const students = await User.find({
+      "personal_info.verified": true,
+      "personal_info.status": "active",
+      "personal_info.application_status": "accepted",
+      "personal_info.enrolled_class": class_name,
+      class_history: {
+        $elemMatch: {
+          class_name: classDoc._id,
+          ...statusFilter,
+        },
+      },
+    })
+      .select("-personal_info.password -personal_info.otp -personal_info.otpExpiresAt")
+      .sort({ "personal_info.rollNo": 1 });
+
+    // Add current class history info to each student
+    const studentsWithCurrentClass = students.map((student) => {
+      const currentClassHistory = student.class_history.find(
+        (ch) => ch.class_name.toString() === classDoc._id.toString()
+      );
+      return {
+        ...student.toObject(),
+        currentClassHistory,
+      };
+    });
+
+    return successHandler(
+      res,
+      200,
+      "Students retrieved successfully",
+      studentsWithCurrentClass,
+      studentsWithCurrentClass.length
+    );
+  } catch (error) {
+    return errorHandler(res, 500, "Error retrieving students", error.message);
+  }
+};
+
+// Bulk promote students to next class
+const promoteStudents = async (req, res) => {
+  try {
+    const { student_ids, from_class, to_class, year, session } = req.body;
+
+    if (!student_ids || !Array.isArray(student_ids) || student_ids.length === 0) {
+      return errorHandler(res, 400, "Student IDs array is required");
+    }
+
+    if (!from_class || !to_class || !year || !session) {
+      return errorHandler(res, 400, "Missing required fields: from_class, to_class, year, session");
+    }
+
+    // Get class documents
+    const fromClassDoc = await Class.findOne({ class_name: from_class });
+    const toClassDoc = await Class.findOne({ class_name: to_class });
+    
+    if (!fromClassDoc || !toClassDoc) {
+      return errorHandler(res, 404, "Class not found");
+    }
+
+    // Get session document
+    const sessionDoc = await Session.findOne({ session_name: session });
+    if (!sessionDoc) {
+      return errorHandler(res, 404, `Session '${session}' not found`);
+    }
+
+    const results = {
+      promoted: [],
+      failed: [],
+    };
+
+    for (const studentId of student_ids) {
+      try {
+        const student = await User.findById(studentId);
+        if (!student) {
+          results.failed.push({ id: studentId, reason: "Student not found" });
+          continue;
+        }
+
+        // Mark old class as completed
+        const classHistoryIndex = student.class_history.findIndex(
+          (ch) => ch.class_name.toString() === fromClassDoc._id.toString() && ch.status === "pass"
+        );
+
+        if (classHistoryIndex !== -1) {
+          student.class_history[classHistoryIndex].isCompleted = true;
+        }
+
+        // Add new class to history
+        student.class_history.push({
+          class_name: toClassDoc._id,
+          year,
+          session: sessionDoc._id,
+          status: "inprogress",
+          result: null,
+          repeat_count: 0,
+          isCompleted: false,
+        });
+
+        // Update enrolled_class
+        student.personal_info.enrolled_class = to_class;
+
+        await student.save();
+        results.promoted.push(studentId);
+      } catch (err) {
+        results.failed.push({ id: studentId, reason: err.message });
+      }
+    }
+
+    // Update class student counts
+    await updateClassStudentCount(fromClassDoc._id);
+    await updateClassStudentCount(toClassDoc._id);
+
+    return successHandler(
+      res,
+      200,
+      `Successfully promoted ${results.promoted.length} student(s)`,
+      results
+    );
+  } catch (error) {
+    return errorHandler(res, 500, "Error promoting students", error.message);
+  }
+};
+
+// Update student's class status (for editing failed students)
+const updateClassStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { class_name, status, result, repeat_count, isCompleted } = req.body;
+
+    if (!class_name || !status) {
+      return errorHandler(res, 400, "Class name and status are required");
+    }
+
+    // Find the class
+    const classDoc = await Class.findOne({ class_name });
+    if (!classDoc) {
+      return errorHandler(res, 404, `Class '${class_name}' not found`);
+    }
+
+    const student = await User.findById(id);
+    if (!student) {
+      return errorHandler(res, 404, "Student not found");
+    }
+
+    // Find and update the class history entry
+    const classHistoryIndex = student.class_history.findIndex(
+      (ch) => ch.class_name.toString() === classDoc._id.toString()
+    );
+
+    if (classHistoryIndex === -1) {
+      return errorHandler(res, 404, "Class history entry not found for this student");
+    }
+
+    // Update the class history entry
+    student.class_history[classHistoryIndex].status = status;
+    if (result !== undefined) {
+      student.class_history[classHistoryIndex].result = result;
+    }
+    if (repeat_count !== undefined) {
+      student.class_history[classHistoryIndex].repeat_count = repeat_count;
+    }
+    if (isCompleted !== undefined) {
+      student.class_history[classHistoryIndex].isCompleted = isCompleted;
+    }
+
+    await student.save();
+
+    return successHandler(
+      res,
+      200,
+      "Student class status updated successfully",
+      student.class_history[classHistoryIndex]
+    );
+  } catch (error) {
+    return errorHandler(res, 500, "Error updating class status", error.message);
+  }
+};
+
 export default {
   getCurrentUser,
   getUser,
@@ -590,4 +794,7 @@ export default {
   update_user,
   update_class_history,
   update_application_status,
+  getStudentsByClassResult,
+  promoteStudents,
+  updateClassStatus,
 };
